@@ -171,7 +171,23 @@
 .carousel-fade .carousel-item {
     transition-duration: 1.5s; /* 사진 교체 속도 */
 }
-                      
+                    
+
+
+
+
+
+
+
+/* news섹션의 내용 축약 */
+.news-summary {
+    display: -webkit-box;
+    -webkit-line-clamp: 3; /* 보여줄 줄 수 (3줄) */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    height: 4.5em; /* line-height가 1.5일 때 3줄 높이 */
+}
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
@@ -303,21 +319,33 @@
         </div>
 
         <div class="hero-content position-relative text-center text-white py-5 shadow-sm" style="z-index: 2;">
-            <div class="container py-lg-5">
-              <br><br>
-                <h2 class="display-4 fw-bold mb-3 tracking-tight">충남대학교 수의해부학 연구실</h2>
-                <p class="fs-4 fw-light opacity-90 mb-4">Laboratory of Veterinary Anatomy & Biomedical Research</p>
-                <hr class="mx-auto border-2 opacity-100" style="width: 80px; color: #fff;">
-                <p class="lead fw-normal mb-5 px-lg-5">
-                    마우스 모델을 활용하여 <strong>신장(Kidney)</strong> 및 <strong>전립선(Prostate)</strong> 질환의 핵심 기전을 규명하고,<br class="d-none d-md-block">
-                    차세대 바이오 플랫폼인 <strong>엑소좀(Exosome)</strong> 연구를 통해 수의학의 새로운 미래를 엽니다.
-                </p>
-                <div class="d-flex justify-content-center gap-3">
-                    <button class="btn btn-outline-light btn-lg px-4 rounded-pill" onclick="showSection('interests')">연구 분야 보기</button>
-                    <button class="btn btn-light btn-lg px-4 rounded-pill text-primary" onclick="showSection('contact')">문의하기</button>
+                <div class="container py-lg-5">
+                    <br><br>
+                    <h2 class="display-4 fw-bold mb-2 tracking-tight">충남대학교 수의해부학 연구실</h2>
+                    <p class="fs-4 fw-light opacity-75 mb-4 font-monospace">Laboratory of Veterinary Anatomy</p>
+                    
+                    <hr class="mx-auto border-2 opacity-100 mb-5" style="width: 400px; color: var(--accent-red); height: 3px;">
+
+                    <div class="hero-text-content mb-5 px-lg-5">
+                        <h3 class="fs-4 fw-bold mb-4">
+                            "동물 모델을 통해 <span class="text-warning">인간 질환과 노화의 기전</span>을 밝히다"
+                        </h3>
+                        
+                        <p class="mx-auto opacity-90" style="max-width: 800px; line-height: 1.8; word-break: keep-all; font-size: 1rem; font-weight: 400;">
+                            전임상 수의학 연구를 기반으로 <strong>엑소좀(Exosome)</strong>을 포함한 차세대 바이오 기술을 활용하여<br class="d-none d-md-block">
+                            신장 질환, 노화, 그리고 삶의 질 개선을 위한 <span class="border-bottom border-white pb-1" style="border-width: 1px !important;">기전 중심 연구</span>를 수행합니다.
+                        </p>
+                    </div>
+
+                    <div class="d-flex justify-content-center gap-3">
+                        <button class="btn btn-outline-light btn-lg px-5 rounded-pill fw-bold transition-all shadow-sm" onclick="showSection('interests')">
+                            연구 분야 보기
+                        </button>
+                        <button class="btn btn-light btn-lg px-5 rounded-pill text-primary fw-bold transition-all shadow-sm" onclick="showSection('contact')">
+                            문의하기
+                        </button>
+                    </div>
                 </div>
-            </div>
-        </div>
     </header>
 
 
@@ -706,8 +734,27 @@
 
 
 
-
-
+<!-- news섹션 사진팝업을 위한 모달 구조 -->
+<div class="modal fade" id="newsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold text-primary" id="newsModalTitle"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <img id="newsModalImg" src="" class="img-fluid w-100" style="max-height: 400px; object-fit: cover;">
+                <div class="p-4">
+                    <div id="newsModalDate" class="text-secondary mb-2" style="font-size: 0.85rem;"></div>
+                    <div id="newsModalDesc" class="text-muted" style="line-height: 1.8; white-space: pre-wrap;"></div>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">닫기</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 
 
@@ -862,18 +909,19 @@ function renderNews() {
     const list = document.getElementById('news-grid');
     if (!list) return;
     
-    list.innerHTML = allLabData.news.map(n => `
+    // map의 두 번째 인자인 'index'를 사용하여 각 카드의 고유 번호를 부여합니다.
+    list.innerHTML = allLabData.news.map((n, index) => `
         <div class="col-md-4 mb-4">
             <div class="card h-100 border-0 shadow-sm overflow-hidden rounded-3 hover-translate-up" 
-                 style="cursor:pointer;" onclick="window.open('${n.img}', '_blank')">
+                 style="cursor:pointer;" onclick="openNewsModal(${index})">
                 <img src="${n.img}" 
-                    onerror="this.src='error.png'" 
+                    onerror="this.src='logo.png'" 
                     class="card-img-top" 
                     style="height:200px; object-fit:cover;">
                 <div class="card-body">
                     <span class="badge bg-light text-primary mb-2">${n.tag || 'News'}</span>
                     <h6 class="fw-bold mb-2">${n.title}</h6>
-                    <p class="text-muted x-small mb-3">${n.desc ? n.desc.substring(0, 100) : ''}</p>
+                   <p class="text-muted x-small mb-3 news-summary">${n.desc || ''}</p>
                     <div class="text-secondary" style="font-size:0.7rem;">${n.date}</div>
                 </div>
             </div>
@@ -961,6 +1009,23 @@ function showSection(sectionId) {
     window.scrollTo(0, 0);
 }
 
+
+// News 모달 열기 함수 (news의 사진팝업)
+function openNewsModal(index) {
+    const data = allLabData.news[index];
+    if (!data) return;
+
+    // 모달 내용 채우기
+    document.getElementById('newsModalTitle').innerText = data.title;
+    document.getElementById('newsModalImg').src = data.img;
+    document.getElementById('newsModalImg').onerror = function() { this.src = 'logo.png'; };
+    document.getElementById('newsModalDate').innerText = data.date;
+    document.getElementById('newsModalDesc').innerText = data.desc;
+
+    // 부트스트랩 모달 띄우기
+    const myModal = new bootstrap.Modal(document.getElementById('newsModal'));
+    myModal.show();
+}
 
 </script>
 </body>
