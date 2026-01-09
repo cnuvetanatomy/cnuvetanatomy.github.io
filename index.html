@@ -849,7 +849,7 @@ async function loadAllLabData() {
         const rawPub = Papa.parse(texts[1], {header: false}).data;
         allLabData.publications = rawPub.slice(1)
             .filter(r => r[1] && r[1].trim() !== "")
-            .map(r => ({ year: r[0], title: r[1], journal: r[2], link: r[3] }))
+            .map(r => ({ year: r[0], title: r[1], journal: r[2], author: r[3], link: r[4] }))
             .sort((a, b) => b.year - a.year);
 
         // 3. News 파싱
@@ -911,12 +911,23 @@ document.addEventListener('DOMContentLoaded', function() {
 function renderPublications() {
     const list = document.getElementById('pub-list');
     if (!list) return;
+
     list.innerHTML = allLabData.publications.map(p => `
-        <div class="pub-item border-bottom py-3 d-flex gap-3 align-items-start">
-            <span class="badge bg-primary rounded-1" style="min-width:60px;">${p.year}</span>
-            <div>
-                <a href="${p.link}" target="_blank" class="text-decoration-none fw-bold text-dark d-block mb-1">${p.title}</a>
-                <div class="text-muted small italic">${p.journal}</div>
+        <div class="pub-item border-bottom py-3 d-flex gap-3 align-items-start" style="transition: background 0.3s;">
+            <span class="badge bg-primary rounded-1" style="min-width:60px; font-weight: 500;">${p.year}</span>
+            
+            <div class="flex-grow-1">
+                <a href="${p.link}" target="_blank" class="text-decoration-none d-block mb-1" style="color: #222; font-weight: 700; font-size: 1.05rem; line-height: 1.4;">
+                    ${p.title}
+                </a>
+                
+                <div class="text-secondary small mb-1" style="font-weight: 500;">
+                    ${p.author || '-'}
+                </div>
+                
+                <div class="text-primary small italic" style="opacity: 0.8; font-family: 'Georgia', serif;">
+                    ${p.journal}
+                </div>
             </div>
         </div>
     `).join('');
@@ -1047,4 +1058,3 @@ function openNewsModal(index) {
 </script>
 </body>
 </html>
-
