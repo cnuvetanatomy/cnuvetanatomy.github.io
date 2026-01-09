@@ -922,16 +922,18 @@ function renderPublications() {
                 </a>
                 
                 <div class="text-secondary small mb-1" style="font-weight: 500;">
-                    ${p.author || '-'}
+                    ${p.author || '저자 정보 없음'} et al.
                 </div>
                 
-                <div class="text-primary small italic" style="opacity: 0.8; font-family: 'Georgia', serif;">
+                <div class="text-muted small italic">
                     ${p.journal}
                 </div>
             </div>
         </div>
     `).join('');
 }
+
+
 
 function renderNews() {
     const list = document.getElementById('news-grid');
