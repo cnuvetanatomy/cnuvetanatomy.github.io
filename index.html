@@ -16,9 +16,6 @@
         }
         .section-title { color: var(--cnu-blue); font-weight: 800; margin-bottom: 40px; position: relative; }
         .section-title::after { content: ''; display: block; width: 50px; height: 3px; background: var(--accent-red); margin-top: 10px; }
-        .research-card { border: none; border-radius: 15px; transition: 0.3s; background: #f8f9fa; }
-        .research-card:hover { transform: translateY(-10px); box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        .pub-badge { background-color: var(--cnu-blue); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; margin-right: 10px; }
 
         /* 푸터 메인 스타일 */
 .main-footer {
@@ -130,6 +127,46 @@ footer {
           }
 
 
+
+
+
+
+
+
+
+          /* 히어로 컨테이너 설정 */
+.hero-container {
+    min-height: 400px;
+    background-color: #000;
+    border-radius: 0 0 50px 50px;
+    margin-bottom: 50px;
+}
+
+/* 배경 이미지 개별 설정 */
+.hero-bg {
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    filter: brightness(0.45); /* 텍스트가 잘 보이도록 배경을 어둡게 조절 */
+    transition: transform 10s linear; /* 은은하게 확대되는 효과용 */
+}
+
+/* 현재 활성화된 슬라이드에 아주 미세한 확대 효과 (선택사항) */
+.carousel-item.active .hero-bg {
+    transform: scale(1.1);
+}
+
+/* 텍스트 콘텐츠 위치 조절 */
+.hero-content {
+    padding-top: 100px;
+    padding-bottom: 150px;
+}
+
+/* 캐러셀 페이드 효과 강화 */
+.carousel-fade .carousel-item {
+    transition-duration: 1.5s; /* 사진 교체 속도 */
+}
                       
     </style>
 </head>
@@ -167,9 +204,11 @@ footer {
  
 <nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top">
     <div class="container">
-        <a class="navbar-brand fw-bold" href="javascript:void(0)" onclick="showSection('home')" style="color: var(--cnu-blue);">
-            <i class="fa-solid fa-microscope me-2"></i>CNU VET ANATOMY
-        </a>
+        <a class="navbar-brand fw-bold" href="javascript:void(0)" onclick="showSection('home')" style="color: var(--cnu-blue); display: flex; align-items: center;">
+    <img src="logo.png" alt="CNU Logo" style="height: 32px; width: auto; margin-right: 10px;">
+    
+    CNU VET ANATOMY
+</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -236,16 +275,75 @@ footer {
   <!-- 홈 섹션 -->
   <!-- 홈 섹션 -->
   <!-- 홈 섹션 -->
-    <section id="home" class="content-section">
-            <header class="hero text-center">
-                <div class="container">
-                    <h2 class="display-5 fw-bold mb-3">충남대학교 수의과대학 해부학실험실</h2>
-                    <p class="fs-4 fw-light">Comparative Anatomy & Kidney Research Laboratory</p>
-                    <hr class="mx-auto" style="width: 100px; border-top: 3px solid white;">
-                    <p class="lead">동물 해부학적 구조를 바탕으로 신장의 생리 및 병태생리를 심도 있게 연구합니다.</p>
+<section id="home" class="content-section" style="display: block;">
+<header class="hero-container position-relative overflow-hidden">
+        <div id="heroCarousel" class="carousel slide carousel-fade position-absolute w-100 h-100" data-bs-ride="carousel" data-bs-interval="5000">
+            <div class="carousel-inner h-100">
+                          <div class="carousel-inner h-100">
+                              <div class="carousel-item active h-100">
+                                  <div class="hero-bg" style="background-image: url('slide1.png');"></div>
+                              </div>
+                              
+                              <div class="carousel-item h-100">
+                                  <div class="hero-bg" style="background-image: url('slide2.png');"></div>
+                              </div>
+                              
+                              <div class="carousel-item h-100">
+                                  <div class="hero-bg" style="background-image: url('slide3.png');"></div>
+                              </div>
+                          </div>
+            </div>
+        </div>
+
+        <div class="hero-content position-relative text-center text-white py-5 shadow-sm" style="z-index: 2;">
+            <div class="container py-lg-5">
+              <br><br>
+                <h2 class="display-4 fw-bold mb-3 tracking-tight">충남대학교 수의해부학 연구실</h2>
+                <p class="fs-4 fw-light opacity-90 mb-4">Laboratory of Veterinary Anatomy & Biomedical Research</p>
+                <hr class="mx-auto border-2 opacity-100" style="width: 80px; color: #fff;">
+                <p class="lead fw-normal mb-5 px-lg-5">
+                    마우스 모델을 활용하여 <strong>신장(Kidney)</strong> 및 <strong>전립선(Prostate)</strong> 질환의 핵심 기전을 규명하고,<br class="d-none d-md-block">
+                    차세대 바이오 플랫폼인 <strong>엑소좀(Exosome)</strong> 연구를 통해 수의학의 새로운 미래를 엽니다.
+                </p>
+                <div class="d-flex justify-content-center gap-3">
+                    <button class="btn btn-outline-light btn-lg px-4 rounded-pill" onclick="showSection('interests')">연구 분야 보기</button>
+                    <button class="btn btn-light btn-lg px-4 rounded-pill text-primary" onclick="showSection('contact')">문의하기</button>
                 </div>
-            </header>
-        </section>
+            </div>
+        </div>
+    </header>
+
+
+
+
+    
+    <div class="container mt-n5 position-relative" style="z-index: 5;">
+        <div class="row g-4 justify-content-center">
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-lg text-center p-4 hover-translate-up">
+                    <div class="mb-3 text-primary"><i class="fa-solid fa-hand-holding-droplet fa-3x"></i></div>
+                    <h4 class="fw-bold">Kidney Research</h4>
+                    <p class="text-muted small">신장의 미세구조 분석과 질환 발생의 분자적 기전 연구</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-lg text-center p-4 hover-translate-up">
+                    <div class="mb-3 text-danger"><i class="fa-solid fa-microscope fa-3x"></i></div>
+                    <h4 class="fw-bold">Prostate Mechanism</h4>
+                    <p class="text-muted small">마우스 모델 기반 전립선 병태생리 및 세포 신호 전달 분석</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-lg text-center p-4 hover-translate-up">
+                    <div class="mb-3 text-success"><i class="fa-solid fa-circle-nodes fa-3x"></i></div>
+                    <h4 class="fw-bold">Next-Gen Exosome</h4>
+                    <p class="text-muted small">엑소좀 기반 진단 마커 발굴 및 차세대 치료 전략 수립</p>
+                </div>
+            </div>
+        </div><br>
+    </div>
+</section>
+
 
 
 
@@ -595,7 +693,9 @@ footer {
         <div class="row gy-4 align-items-center">
             <div class="col-lg-4 text-center text-lg-start">
                 <div class="footer-logo mb-3">
-                    <i class="fa-solid fa-microscope me-2"></i>
+
+                  
+                   <img src="logo.png" alt="CNU Logo" style="height: 32px; width: auto; margin-right: 10px;">
                     <span class="fw-bold">CNU VET ANATOMY</span>
                 </div>
                 <p class="footer-quote mb-0 text-secondary">
@@ -662,12 +762,9 @@ footer {
         window.scrollTo(0, 0);
     }
 
-    // 초기 로딩 시 Home 섹션이 보이도록 설정 (필요한 경우)
-    window.onload = function() {
-        showSection('home');
-    };
+
 </script>
 </body>
 </html>
-<div></div></body></html>
+
 
