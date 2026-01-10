@@ -844,60 +844,70 @@ function getDirectLink(url) {
 // 4. 데이터를 불러와서 화면에 그리는 통합 함수
 let allLabData = { members: [], publications: [], news: [], interests: [] };
 
-
-
-// 데이터 로드 상태를 추적 (true면 이미 불러온 것)
-let isDataLoaded = {
-    members: false,
-    publications: false,
-    news: false,
-    interests: false
-};
-
-
-
-// 모든 데이터를 불러오던 loadAllLabData를 대신하여, 필요한 시트만 골라 불러오는 함수를 만듭니다
-async function fetchSheetData(key) {
-    if (isDataLoaded[key]) return; // 이미 불러왔다면 실행 안 함
-
-    console.log(`${key} 데이터 불러오는 중...`);
+// 1. 모든 데이터를 불러오고 화면에 뿌리는 통합 함수
+async function loadAllLabData() {
     try {
-        const response = await fetch(`${URLS[key]}?v=${new Date().getTime()}`);
-        const text = await response.text();
-        const parsedData = Papa.parse(text, { header: false }).data.slice(1);
+        console.log("데이터 로딩 시작...");
+        // 모든 시트 데이터를 동시에 병렬 호출
+        const [resMem, resPub, resNews, resInt] = await Promise.all([
+            fetch(URLS.members), fetch(URLS.publications), fetch(URLS.news), fetch(URLS.interests)
+        ]);
 
-        // 데이터 가공 (기존 로직 그대로 활용)
-        if (key === 'members') {
-            allLabData.members = parsedData.filter(r => r[1]).map(row => ({
-                category: row[0]?.trim(), name: row[1]?.trim(), engName: row[2]?.trim(),
-                email: row[3]?.trim(), status: row[4]?.trim(), photo: getDirectLink(row[5])
-            }));
-            renderMembers('대학원생'); // 로드 직후 첫 렌더링
-        } 
-        else if (key === 'publications') {
-            allLabData.publications = parsedData.filter(r => r[1]).map(r => ({
-                year: r[0], title: r[1], journal: r[2], author: r[3], link: r[4]
-            })).sort((a, b) => b.year - a.year);
-            renderPublications();
-        } 
-        else if (key === 'news') {
-            allLabData.news = parsedData.filter(r => r[1]).map(r => ({
-                date: r[0], title: r[1], desc: r[2], tag: r[3], img: getDirectLink(r[4])
-            })).reverse();
-            renderNews();
-        } 
-        else if (key === 'interests') {
-            allLabData.interests = parsedData.filter(r => r[0]).map(r => ({
-                title: r[0], desc: r[1], img: getDirectLink(r[2])
-            }));
-            renderInterests();
-        }
+        const texts = await Promise.all([resMem.text(), resPub.text(), resNews.text(), resInt.text()]);
 
-        isDataLoaded[key] = true; // 로드 완료 처리
+        // 1. Members 파싱 (2번째 열인 '이름'이 있는 경우만 취급)
+        const rawMem = Papa.parse(texts[0], {header: false}).data;
+        allLabData.members = rawMem.slice(1)
+            .filter(r => r[1] && r[1].trim() !== "") 
+            .map(row => ({
+                category: (row[0] || "").trim(),
+                name: (row[1] || "").trim(),
+                engName: (row[2] || "").trim(),
+                email: (row[3] || "").trim(),
+                status: (row[4] || "").trim(),
+                photo: getDirectLink(row[5] || "")
+            }));
+        
+        // 2. Publications 파싱
+        const rawPub = Papa.parse(texts[1], {header: false}).data;
+        allLabData.publications = rawPub.slice(1)
+            .filter(r => r[1] && r[1].trim() !== "")
+            .map(r => ({ year: r[0], title: r[1], journal: r[2], author: r[3], link: r[4] }))
+            .sort((a, b) => b.year - a.year);
+
+        // 3. News 파싱
+        const rawNews = Papa.parse(texts[2], {header: false}).data;
+        allLabData.news = rawNews.slice(1)
+            .filter(r => r[1] && r[1].trim() !== "")
+            .map(r => ({ date: r[0], title: r[1], desc: r[2], tag: r[3], img: getDirectLink(r[4]) }))
+            .reverse();
+
+        // 4. Interests 파싱
+        const rawInt = Papa.parse(texts[3], {header: false}).data;
+        allLabData.interests = rawInt.slice(1)
+            .filter(r => r[0] && r[0].trim() !== "")
+            .map(r => ({ title: r[0], desc: r[1], img: getDirectLink(r[2]) }));
+
+        console.log("데이터 로드 완료. 렌더링 시작.");
+
+        // 모든 섹션 렌더링 실행
+        renderMembers('대학원생');
+        renderPublications();
+        renderNews();
+        renderInterests();
+
     } catch (err) {
-        console.error(`${key} 로딩 실패:`, err);
+        console.error("데이터 로딩 중 치명적 오류:", err);
+        // 에러 발생 시 사용자 안내
+        const loaders = ['member-grid', 'pub-list', 'news-grid', 'interest-list'];
+        loaders.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.innerHTML = `<p class="text-center py-5 text-danger">데이터를 불러오지 못했습니다. (네트워크 오류)</p>`;
+        });
     }
 }
+
+
 
 
 
@@ -1025,64 +1035,34 @@ function renderMembers(category) {
 
 /**
  * 섹션 전환 함수
- * 해시(#) 값을 받아 해당 섹션만 보여줍니다.
+ * 클릭한 섹션만 보이고 나머지는 숨깁니다.
  */
-async function showSection(hash) {
-    let sectionId = hash.replace('#', '') || 'home';
-
-    // 1. 해당 섹션에 데이터가 필요한 경우 즉시 로딩 시작 (비동기)
-    if (isDataLoaded.hasOwnProperty(sectionId)) {
-        fetchSheetData(sectionId); 
-    }
-
-    // 2. 화면 전환 로직 (기존과 동일)
+function showSection(sectionId) {
+    // 1. 모든 섹션(.content-section)을 찾아서 숨김
     const sections = document.querySelectorAll('.content-section');
     sections.forEach(section => {
         section.style.display = 'none';
     });
 
-    // 3. 대상 섹션 표시
+    // 2. 선택한 ID를 가진 섹션만 보이게 설정
     const targetSection = document.getElementById(sectionId);
     if (targetSection) {
         targetSection.style.display = 'block';
     }
 
-    // 4. 네비게이션 메뉴 활성화 스타일(active) 관리
-    const navLinks = document.querySelectorAll('.nav-link');
-    navLinks.forEach(link => {
-        link.classList.remove('active');
-        if (link.getAttribute('href') === `#${sectionId}`) {
-            link.classList.add('active');
-        }
-    });
-
-    // 5. 모바일 메뉴 자동 닫기
+    // 3. 모바일 환경에서 메뉴 클릭 시 펼쳐진 메뉴창을 자동으로 닫기
     const navbarCollapse = document.getElementById('navbarNav');
     if (navbarCollapse && navbarCollapse.classList.contains('show')) {
+        // 부트스트랩의 Collapse 인스턴스를 가져오거나 생성하여 닫기(hide) 실행
         const bsCollapse = bootstrap.Collapse.getInstance(navbarCollapse) || new bootstrap.Collapse(navbarCollapse);
         bsCollapse.hide();
     }
     
-    // 6. 페이지 상단으로 스크롤 이동
+    // 4. 페이지 전환 시 화면 최상단으로 스크롤 이동
     window.scrollTo(0, 0);
 }
 
-/**
- * 브라우저 이벤트 리스너
- */
 
-// 뒤로가기, 앞으로가기 또는 주소창 직접 입력 시 감지
-window.addEventListener('hashchange', function() {
-    showSection(window.location.hash);
-});
-
-// 페이지 처음 로드 시 실행
-document.addEventListener('DOMContentLoaded', function() {
-    loadAllLabData(); // 기존 데이터 로딩 함수 호출
-
-    // 접속한 주소에 해시가 있으면 해당 섹션을, 없으면 홈을 보여줌
-    showSection(window.location.hash);
-});
 
 
 
