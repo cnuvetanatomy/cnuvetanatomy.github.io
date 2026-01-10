@@ -834,116 +834,130 @@ const URLS = {
     interests: "https://docs.google.com/spreadsheets/d/e/2PACX-1vScT234ofHtmlujlRgiAd9P91gCrfyEu5BjKv2wORZKbC3MuwCLa9NCxo4vcb6ODrzqi_4r-qnqMEXo/pub?gid=430870758&single=true&output=csv" 
 };
 
+// 1. 데이터 저장소 및 로드 상태 추적 변수
+let allLabData = { members: [], publications: [], news: [], interests: [] };
+let isDataLoaded = {
+    members: false,
+    publications: false,
+    news: false,
+    interests: false
+};
 
-// 2. 구글 드라이브 이미지 주소 변환 함수 (기존 GAS 로직 이식)
+// 2. 구글 드라이브 이미지 주소 변환 함수
 function getDirectLink(url) {
     if (url && url.includes('drive.google.com')) {
         let fileId = '';
-        if (url.includes('/d/')) {
-            fileId = url.split('/d/')[1].split('/')[0];
-        } else if (url.includes('id=')) {
-            fileId = url.split('id=')[1].split('&')[0];
-        }
-        if (fileId) {
-            return 'https://lh3.googleusercontent.com/d/' + fileId;
-        }
+        if (url.includes('/d/')) fileId = url.split('/d/')[1].split('/')[0];
+        else if (url.includes('id=')) fileId = url.split('id=')[1].split('&')[0];
+        if (fileId) return 'https://lh3.googleusercontent.com/d/' + fileId;
     }
-    // 링크가 없으면 로고 파일 사용
     return url || 'image/error.png';
 }
 
-// 4. 데이터를 불러와서 화면에 그리는 통합 함수
-let allLabData = { members: [], publications: [], news: [], interests: [] };
+// 3. [핵심] 특정 섹션의 데이터만 개별적으로 불러오는 함수
+async function fetchSheetData(key) {
+    if (isDataLoaded[key]) return; // 이미 불러왔다면 무시
 
+    // 로딩 표시를 위한 컨테이너 ID 매핑
+    const containerId = { 
+        'members': 'member-grid', 
+        'publications': 'pub-list', 
+        'news': 'news-grid', 
+        'interests': 'interest-list' 
+    }[key];
+    
+    const container = document.getElementById(containerId);
+    if (container) {
+        container.innerHTML = `<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">데이터를 불러오는 중...</p></div>`;
+    }
 
-
-
-
-
-// 1. 모든 데이터를 불러오고 화면에 뿌리는 통합 함수
-async function loadAllLabData() {
     try {
-        console.log("데이터 로딩 시작...");
-        // 모든 시트 데이터를 동시에 병렬 호출
-        const [resMem, resPub, resNews, resInt] = await Promise.all([
-            fetch(URLS.members), fetch(URLS.publications), fetch(URLS.news), fetch(URLS.interests)
-        ]);
+        const response = await fetch(`${URLS[key]}?v=${new Date().getTime()}`);
+        const text = await response.text();
+        const parsed = Papa.parse(text, { header: false }).data;
+        const rows = parsed.slice(1); // 헤더 제외
 
-        const texts = await Promise.all([resMem.text(), resPub.text(), resNews.text(), resInt.text()]);
-
-        // 1. Members 파싱 (2번째 열인 '이름'이 있는 경우만 취급)
-        const rawMem = Papa.parse(texts[0], {header: false}).data;
-        allLabData.members = rawMem.slice(1)
-            .filter(r => r[1] && r[1].trim() !== "") 
-            .map(row => ({
-                category: (row[0] || "").trim(),
-                name: (row[1] || "").trim(),
-                engName: (row[2] || "").trim(),
-                email: (row[3] || "").trim(),
-                status: (row[4] || "").trim(),
-                photo: getDirectLink(row[5] || "")
+        // 섹션별 데이터 가공 로직
+        if (key === 'members') {
+            allLabData.members = rows.filter(r => r[1]).map(row => ({
+                category: (row[0] || "").trim(), name: (row[1] || "").trim(),
+                engName: (row[2] || "").trim(), email: (row[3] || "").trim(),
+                status: (row[4] || "").trim(), photo: getDirectLink(row[5] || "")
             }));
-        
-        // 2. Publications 파싱
-        const rawPub = Papa.parse(texts[1], {header: false}).data;
-        allLabData.publications = rawPub.slice(1)
-            .filter(r => r[1] && r[1].trim() !== "")
-            .map(r => ({ year: r[0], title: r[1], journal: r[2], author: r[3], link: r[4] }))
-            .sort((a, b) => b.year - a.year);
+            renderMembers('대학원생');
+        } 
+        else if (key === 'publications') {
+            allLabData.publications = rows.filter(r => r[1]).map(r => ({
+                year: r[0], title: r[1], journal: r[2], author: r[3], link: r[4]
+            })).sort((a, b) => b.year - a.year);
+            renderPublications();
+        } 
+        else if (key === 'news') {
+            allLabData.news = rows.filter(r => r[1]).map(r => ({
+                date: r[0], title: r[1], desc: r[2], tag: r[3], img: getDirectLink(r[4])
+            })).reverse();
+            renderNews();
+        } 
+        else if (key === 'interests') {
+            allLabData.interests = rows.filter(r => r[0]).map(r => ({
+                title: r[0], desc: r[1], img: getDirectLink(r[2])
+            }));
+            renderInterests();
+        }
 
-        // 3. News 파싱
-        const rawNews = Papa.parse(texts[2], {header: false}).data;
-        allLabData.news = rawNews.slice(1)
-            .filter(r => r[1] && r[1].trim() !== "")
-            .map(r => ({ date: r[0], title: r[1], desc: r[2], tag: r[3], img: getDirectLink(r[4]) }))
-            .reverse();
-
-        // 4. Interests 파싱
-        const rawInt = Papa.parse(texts[3], {header: false}).data;
-        allLabData.interests = rawInt.slice(1)
-            .filter(r => r[0] && r[0].trim() !== "")
-            .map(r => ({ title: r[0], desc: r[1], img: getDirectLink(r[2]) }));
-
-        console.log("데이터 로드 완료. 렌더링 시작.");
-
-        // 모든 섹션 렌더링 실행
-        renderMembers('대학원생');
-        renderPublications();
-        renderNews();
-        renderInterests();
-
+        isDataLoaded[key] = true; // 로드 완료 표시
     } catch (err) {
-        console.error("데이터 로딩 중 치명적 오류:", err);
-        // 에러 발생 시 사용자 안내
-        const loaders = ['member-grid', 'pub-list', 'news-grid', 'interest-list'];
-        loaders.forEach(id => {
-            const el = document.getElementById(id);
-            if(el) el.innerHTML = `<p class="text-center py-5 text-danger">데이터를 불러오지 못했습니다. (네트워크 오류)</p>`;
-        });
+        console.error(`${key} 데이터 로드 실패:`, err);
+        if (container) container.innerHTML = `<p class="text-center py-5 text-danger">데이터를 불러오지 못했습니다.</p>`;
     }
 }
 
+// 4. 섹션 전환 함수 (데이터 체크 로직 추가)
+async function showSection(hash) {
+    let sectionId = hash.replace('#', '') || 'home';
 
+    // 모든 섹션 숨김
+    document.querySelectorAll('.content-section').forEach(s => s.style.display = 'none');
 
+    // 대상 섹션 표시
+    const targetSection = document.getElementById(sectionId);
+    if (targetSection) {
+        targetSection.style.display = 'block';
+        
+        // 데이터가 필요한 섹션인 경우 로딩 실행
+        if (isDataLoaded.hasOwnProperty(sectionId)) {
+            await fetchSheetData(sectionId);
+        }
+    }
 
+    // 네비게이션 active 상태 업데이트
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.toggle('active', link.getAttribute('href') === `#${sectionId}`);
+    });
 
-
-
-
-// 페이지 로드 시 모든 로직 통합 실행
-document.addEventListener('DOMContentLoaded', function() {
-    loadAllLabData();    // 1. 모든 데이터(CSV) 불러오기 및 렌더링
-    showSection('home'); // 2. 첫 화면으로 '홈' 표시
+    // 모바일 메뉴 닫기
+    const navbarCollapse = document.getElementById('navbarNav');
+    if (navbarCollapse && navbarCollapse.classList.contains('show')) {
+        bootstrap.Collapse.getInstance(navbarCollapse)?.hide() || new bootstrap.Collapse(navbarCollapse).hide();
+    }
     
-    // 부트스트랩 캐러셀 자동 재생을 위한 추가 설정 (선택사항)
+    window.scrollTo(0, 0);
+}
+
+// 5. 초기 실행 설정
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. 현재 해시에 맞는 섹션 표시 (필요한 데이터만 부름)
+    showSection(window.location.hash);
+
+    // 2. 캐러셀 실행 (데이터와 무관하므로 즉시 실행)
     const heroCarousel = document.querySelector('#heroCarousel');
     if (heroCarousel) {
-        new bootstrap.Carousel(heroCarousel, {
-            interval: 5000,
-            ride: 'carousel'
-        });
+        new bootstrap.Carousel(heroCarousel, { interval: 5000, ride: 'carousel' });
     }
 });
+
+// 뒤로가기/앞으로가기 감지
+window.addEventListener('hashchange', () => showSection(window.location.hash));
 
 // --- 각 섹션 렌더링 함수 ---
 
