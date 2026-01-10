@@ -1,4 +1,15 @@
 <html lang="ko"><head>
+    <meta name="google-site-verification" content="dj6SDQvx30DAqwQnI3RQNmJU6D50OsGHPTDjeVQmJcE" />
+
+    <meta name="description" content="충남대학교 수의과대학 수의해부학 연구실 - 신장 질환, 노화 및 엑소좀 기전 연구">
+    <meta name="keywords" content="충남대, 수의대, 수의해부학, 해부학연구실, 엑소좀, 신장질환, 노화연구">
+    <link rel="canonical" href="https://cnuvetanatomy.github.io/">
+
+    <meta property="og:title" content="CNU Vet Anatomy | 충남대 수의해부학 연구실">
+    <meta property="og:description" content="동물 모델을 통해 인간 질환과 노화의 기전을 밝히는 연구실입니다.">
+    <meta property="og:image" content="https://cnuvetanatomy.github.io/image/logo.png">
+    <meta property="og:url" content="https://cnuvetanatomy.github.io/">
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CNU Vet Anatomy | 해부학연구실</title>
@@ -844,6 +855,11 @@ function getDirectLink(url) {
 // 4. 데이터를 불러와서 화면에 그리는 통합 함수
 let allLabData = { members: [], publications: [], news: [], interests: [] };
 
+
+
+
+
+
 // 1. 모든 데이터를 불러오고 화면에 뿌리는 통합 함수
 async function loadAllLabData() {
     try {
@@ -1035,34 +1051,60 @@ function renderMembers(category) {
 
 /**
  * 섹션 전환 함수
- * 클릭한 섹션만 보이고 나머지는 숨깁니다.
+ * 해시(#) 값을 받아 해당 섹션만 보여줍니다.
  */
-function showSection(sectionId) {
-    // 1. 모든 섹션(.content-section)을 찾아서 숨김
+function showSection(hash) {
+    // 1. 해시값이 없거나 '#'만 있으면 기본값 'home' 사용
+    let sectionId = hash.replace('#', '') || 'home';
+
+    // 2. 모든 섹션을 숨김
     const sections = document.querySelectorAll('.content-section');
     sections.forEach(section => {
         section.style.display = 'none';
     });
 
-    // 2. 선택한 ID를 가진 섹션만 보이게 설정
+    // 3. 대상 섹션 표시
     const targetSection = document.getElementById(sectionId);
     if (targetSection) {
         targetSection.style.display = 'block';
     }
 
-    // 3. 모바일 환경에서 메뉴 클릭 시 펼쳐진 메뉴창을 자동으로 닫기
+    // 4. 네비게이션 메뉴 활성화 스타일(active) 관리
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === `#${sectionId}`) {
+            link.classList.add('active');
+        }
+    });
+
+    // 5. 모바일 메뉴 자동 닫기
     const navbarCollapse = document.getElementById('navbarNav');
     if (navbarCollapse && navbarCollapse.classList.contains('show')) {
-        // 부트스트랩의 Collapse 인스턴스를 가져오거나 생성하여 닫기(hide) 실행
         const bsCollapse = bootstrap.Collapse.getInstance(navbarCollapse) || new bootstrap.Collapse(navbarCollapse);
         bsCollapse.hide();
     }
     
-    // 4. 페이지 전환 시 화면 최상단으로 스크롤 이동
+    // 6. 페이지 상단으로 스크롤 이동
     window.scrollTo(0, 0);
 }
 
+/**
+ * 브라우저 이벤트 리스너
+ */
 
+// 뒤로가기, 앞으로가기 또는 주소창 직접 입력 시 감지
+window.addEventListener('hashchange', function() {
+    showSection(window.location.hash);
+});
+
+// 페이지 처음 로드 시 실행
+document.addEventListener('DOMContentLoaded', function() {
+    loadAllLabData(); // 기존 데이터 로딩 함수 호출
+
+    // 접속한 주소에 해시가 있으면 해당 섹션을, 없으면 홈을 보여줌
+    showSection(window.location.hash);
+});
 
 
 
