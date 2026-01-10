@@ -1078,15 +1078,12 @@ window.addEventListener('hashchange', function() {
 
 // 페이지 처음 로드 시 실행
 document.addEventListener('DOMContentLoaded', function() {
-    // 1. 현재 주소에 맞는 섹션 표시 (showSection 내부에서 필요한 데이터만 로드함)
-    showSection(window.location.hash);
+    loadAllLabData(); // 기존 데이터 로딩 함수 호출
 
-    // 2. 캐러셀 실행 (데이터 로딩과 상관없이 즉시 실행되어 속도 향상)
-    const heroCarousel = document.querySelector('#heroCarousel');
-    if (heroCarousel) {
-        new bootstrap.Carousel(heroCarousel, { interval: 5000, ride: 'carousel' });
-    }
+    // 접속한 주소에 해시가 있으면 해당 섹션을, 없으면 홈을 보여줌
+    showSection(window.location.hash);
 });
+
 
 
 
